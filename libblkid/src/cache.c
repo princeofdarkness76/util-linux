@@ -73,9 +73,8 @@ char *blkid_get_cache_filename(struct blkid_config *conf)
 		if (!c)
 			filename = strdup(get_default_cache_filename());
 		else {
-			filename = c->cachefile;  /* already allocated */
-			c->cachefile = NULL;
-			blkid_free_config(c);
+			filename = strdup(c->cachefile);
+			blkid_unref_config(c);
 		}
 	}
 	return filename;

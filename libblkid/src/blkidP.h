@@ -235,11 +235,15 @@ struct blkid_config {
 	int uevent;			/* SEND_UEVENT=<yes|not> option */
 	char *cachefile;		/* CACHE_FILE=<path> option */
 	char **probeoff;		/* PROBE_OFF=<list> option */
+
+	int refcount;			/* reference counter */
 };
 
 extern struct blkid_config *blkid_read_config(const char *filename)
 			__ul_attribute__((warn_unused_result));
-extern void blkid_free_config(struct blkid_config *conf);
+extern void blkid_ref_config(struct blkid_config *conf);
+extern void blkid_unref_config(struct blkid_config *conf);
+
 
 /*
  * Minimum number of seconds between device probes, even when reading

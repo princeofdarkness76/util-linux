@@ -137,6 +137,7 @@ struct blkid_config *blkid_read_config(const char *filename)
 	if (!conf)
 		return NULL;
 	conf->uevent = -1;
+	conf->refcount = 1;
 
 	DBG(CONFIG, ul_debug("reading config file: %s.", filename));
 
@@ -165,18 +166,27 @@ dflt:
 		fclose(f);
 	return conf;
 err:
-	free(conf);
 	fclose(f);
+	blkid_unref_config(conf);
 	return NULL;
 }
 
-void blkid_free_config(struct blkid_config *conf)
+void blkid_ref_config(struct blkid_config *conf)
 {
-	if (!conf)
-		return;
-	free(conf->cachefile);
-	strv_free(conf->probeoff);
-	free(conf);
+	if (conf)
+		conf->refcount++;
+}
+
+void blkid_unref_config(struct blkid_config *conf)
+{
+	if (conf) {
+		conf->refcount--;
+		if (conf->refcount <= 0) {
+			free(conf->cachefile);
+			strv_free(conf->probeoff);
+			free(conf);
+		}
+	}
 }
 
 #ifdef TEST_PROGRAM
@@ -206,7 +216,7 @@ int main(int argc, char *argv[])
 	printf("SEND UEVENT: %s\n", conf->uevent ? "TRUE" : "FALSE");
 	printf("CACHE_FILE:  %s\n", conf->cachefile);
 
-	blkid_free_config(conf);
+	blkid_unref_config(conf);
 	return EXIT_SUCCESS;
 }
 #endif

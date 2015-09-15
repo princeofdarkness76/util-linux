@@ -262,7 +262,7 @@ char *blkid_evaluate_tag(const char *token, const char *value, blkid_cache *cach
 
 	DBG(EVALUATE, ul_debug("%s=%s evaluated as %s", token, value, ret));
 out:
-	blkid_free_config(conf);
+	blkid_unref_config(conf);
 	free(t);
 	free(v);
 	return ret;
