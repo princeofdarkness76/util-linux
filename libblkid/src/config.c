@@ -25,9 +25,11 @@
 
 #include "blkidP.h"
 #include "env.h"
+#include "strv.h"
 
 static int parse_evaluate(struct blkid_config *conf, char *s)
 {
+	DBG(CONFIG, ul_debug("parse EVALUATE='%s'", s));
 	while(s && *s) {
 		char *sep;
 
@@ -53,6 +55,13 @@ err:
 	DBG(CONFIG, ul_debug(
 		"config file: unknown evaluation method '%s'.", s));
 	return -1;
+}
+
+static int parse_probeoff(struct blkid_config *conf, char *s)
+{
+	DBG(CONFIG, ul_debug("parse PROBE_OFF='%s'", s));
+	conf->probeoff = strv_split(s, ",");
+	return 0;
 }
 
 static int parse_next(FILE *fd, struct blkid_config *conf)
@@ -100,6 +109,10 @@ static int parse_next(FILE *fd, struct blkid_config *conf)
 	} else if (!strncmp(s, "EVALUATE=", 9)) {
 		s += 9;
 		if (*s && parse_evaluate(conf, s) == -1)
+			return -1;
+	} else if (!strncmp(s, "PROBE_OFF=", 10)) {
+		s += 10;
+		if (*s && parse_probeoff(conf, s) == -1)
 			return -1;
 	} else {
 		DBG(CONFIG, ul_debug(
@@ -162,6 +175,7 @@ void blkid_free_config(struct blkid_config *conf)
 	if (!conf)
 		return;
 	free(conf->cachefile);
+	strv_free(conf->probeoff);
 	free(conf);
 }
 

@@ -234,6 +234,7 @@ struct blkid_config {
 	int nevals;			/* number of elems in eval array */
 	int uevent;			/* SEND_UEVENT=<yes|not> option */
 	char *cachefile;		/* CACHE_FILE=<path> option */
+	char **probeoff;		/* PROBE_OFF=<list> option */
 };
 
 extern struct blkid_config *blkid_read_config(const char *filename)
