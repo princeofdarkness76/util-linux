@@ -51,7 +51,10 @@
 
 #ifdef CONFIG_BLKID_VERIFY_UDEV
 /* returns zero when the device has NAME=value (LABEL/UUID) */
-static int verify_tag(const char *devname, const char *name, const char *value)
+static int verify_tag(const char *devname,
+		      const char *name,
+		      const char *value,
+		      struct blkid_config *conf)
 {
 	blkid_probe pr;
 	int fd = -1, rc = -1;
@@ -59,7 +62,7 @@ static int verify_tag(const char *devname, const char *name, const char *value)
 	const char *data;
 	int errsv = 0;
 
-	pr = blkid_new_probe();
+	pr = __blkid_new_probe(conf);
 	if (!pr)
 		return -1;
 
@@ -132,7 +135,13 @@ int blkid_send_uevent(const char *devname, const char *action)
 	return rc;
 }
 
-static char *evaluate_by_udev(const char *token, const char *value, int uevent)
+static char *evaluate_by_udev(const char *token, const char *value, int uevent,
+#ifdef CONFIG_BLKID_VERIFY_UDEV
+		struct blkid_config *conf
+#else
+		__attribute__((__unused__)) struct blkid_config *conf
+#endif
+)
 {
 	char dev[PATH_MAX];
 	char *path = NULL;
@@ -171,7 +180,7 @@ static char *evaluate_by_udev(const char *token, const char *value, int uevent)
 		return NULL;
 
 #ifdef CONFIG_BLKID_VERIFY_UDEV
-	if (verify_tag(path, token, value))
+	if (verify_tag(path, token, value, conf))
 		goto failed;
 #endif
 	return path;
@@ -252,7 +261,7 @@ char *blkid_evaluate_tag(const char *token, const char *value, blkid_cache *cach
 
 	for (i = 0; i < conf->nevals; i++) {
 		if (conf->eval[i] == BLKID_EVAL_UDEV)
-			ret = evaluate_by_udev(token, value, conf->uevent);
+			ret = evaluate_by_udev(token, value, conf->uevent, conf);
 		else if (conf->eval[i] == BLKID_EVAL_SCAN)
 			ret = evaluate_by_scan(token, value, cache, conf);
 		if (ret)

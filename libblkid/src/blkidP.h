@@ -202,6 +202,8 @@ struct blkid_struct_probe
 
 	struct blkid_struct_probe *parent;	/* for clones */
 	struct blkid_struct_probe *disk_probe;	/* whole-disk probing */
+
+	struct blkid_config	*conf;		/* reference to config file */
 };
 
 /* private flags library flags */
@@ -213,8 +215,12 @@ struct blkid_struct_probe
 /* private per-probing flags */
 #define BLKID_PROBE_FL_IGNORE_PT (1 << 1)	/* ignore partition table */
 
+extern blkid_probe __blkid_new_probe(struct blkid_config *conf);
 extern blkid_probe blkid_clone_probe(blkid_probe parent);
 extern blkid_probe blkid_probe_get_wholedisk_probe(blkid_probe pr);
+
+extern void blkid_probe_set_config(blkid_probe pr, struct blkid_config *conf);
+extern struct blkid_config *blkid_probe_get_config(blkid_probe pr);
 
 /*
  * Evaluation methods (for blkid_eval_* API)

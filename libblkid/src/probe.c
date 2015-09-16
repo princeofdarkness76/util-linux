@@ -133,12 +133,7 @@ static struct blkid_prval *blkid_probe_new_value(void);
 static void blkid_probe_reset_values(blkid_probe pr);
 static void blkid_probe_reset_buffer(blkid_probe pr);
 
-/**
- * blkid_new_probe:
- *
- * Returns: a pointer to the newly allocated probe struct or NULL in case of error.
- */
-blkid_probe blkid_new_probe(void)
+blkid_probe __blkid_new_probe(struct blkid_config *conf)
 {
 	int i;
 	blkid_probe pr;
@@ -158,7 +153,42 @@ blkid_probe blkid_new_probe(void)
 	}
 	INIT_LIST_HEAD(&pr->buffers);
 	INIT_LIST_HEAD(&pr->values);
+
+	if (!conf)
+		conf = blkid_read_config();
+	blkid_probe_set_config(pr, conf);
+
 	return pr;
+}
+
+/**
+ * blkid_new_probe:
+ *
+ * Returns: a pointer to the newly allocated probe struct or NULL in case of error.
+ */
+blkid_probe blkid_new_probe(void)
+{
+	return __blkid_new_probe(NULL);
+}
+
+void blkid_probe_set_config(blkid_probe pr, struct blkid_config *conf)
+{
+	assert(pr);
+
+	blkid_unref_config(pr->conf);
+
+	pr->conf = conf;
+	blkid_ref_config(pr->conf);
+}
+
+struct blkid_config *blkid_probe_get_config(blkid_probe pr)
+{
+	assert(pr);
+
+	if (!pr->conf)
+		pr->conf = blkid_read_config();
+
+	return pr->conf;
 }
 
 /*
@@ -190,6 +220,8 @@ blkid_probe blkid_clone_probe(blkid_probe parent)
 	pr->parent = parent;
 
 	pr->flags &= ~BLKID_FL_PRIVATE_FD;
+
+	blkid_probe_set_config(pr, parent->conf);
 
 	return pr;
 }
@@ -264,6 +296,7 @@ void blkid_free_probe(blkid_probe pr)
 	blkid_probe_reset_buffer(pr);
 	blkid_probe_reset_values(pr);
 	blkid_free_probe(pr->disk_probe);
+	blkid_unref_config(pr->conf);
 
 	DBG(LOWPROBE, ul_debug("free probe %p", pr));
 	free(pr);
@@ -1560,11 +1593,12 @@ blkid_probe blkid_probe_get_wholedisk_probe(blkid_probe pr)
 		DBG(LOWPROBE, ul_debug("allocate a wholedisk probe"));
 
 		pr->disk_probe = blkid_new_probe_from_filename(disk_path);
-
 		free(disk_path);
 
 		if (!pr->disk_probe)
 			return NULL;	/* ENOMEM? */
+		if (pr->conf)
+			blkid_probe_set_config(pr->disk_probe, pr->conf);
 	}
 
 	return pr->disk_probe;
