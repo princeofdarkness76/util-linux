@@ -51,7 +51,6 @@ void blkid_free_dev(blkid_dev dev)
 	DBG(DEV,
 	    ul_debug("  freeing dev %s (%s)", dev->bid_name, dev->bid_type ?
 		   dev->bid_type : "(null)"));
-	DBG(DEV, blkid_debug_dump_dev(dev));
 
 	list_del(&dev->bid_devs);
 	while (!list_empty(&dev->bid_tags)) {

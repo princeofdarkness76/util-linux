@@ -30,16 +30,6 @@ static blkid_tag blkid_new_tag(void)
 	return tag;
 }
 
-void blkid_debug_dump_tag(blkid_tag tag)
-{
-	if (!tag) {
-		fprintf(stderr, "    tag: NULL\n");
-		return;
-	}
-
-	fprintf(stderr, "    tag: %s=\"%s\"\n", tag->bit_name, tag->bit_val);
-}
-
 void blkid_free_tag(blkid_tag tag)
 {
 	if (!tag)
@@ -47,7 +37,6 @@ void blkid_free_tag(blkid_tag tag)
 
 	DBG(TAG, ul_debug("    freeing tag %s=%s", tag->bit_name,
 		   tag->bit_val ? tag->bit_val : "(NULL)"));
-	DBG(TAG, blkid_debug_dump_tag(tag));
 
 	list_del(&tag->bit_tags);	/* list of tags for this device */
 	list_del(&tag->bit_names);	/* list of tags with this type */
