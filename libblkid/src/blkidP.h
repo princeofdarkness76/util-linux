@@ -239,7 +239,9 @@ struct blkid_config {
 	int refcount;			/* reference counter */
 };
 
-extern struct blkid_config *blkid_read_config(const char *filename)
+extern struct blkid_config *blkid_read_config(void)
+			__ul_attribute__((warn_unused_result));
+extern struct blkid_config *blkid_get_config(blkid_cache cache)
 			__ul_attribute__((warn_unused_result));
 extern void blkid_ref_config(struct blkid_config *conf);
 extern void blkid_unref_config(struct blkid_config *conf);
@@ -274,6 +276,7 @@ struct blkid_struct_cache
 	unsigned int		bic_flags;	/* Status flags of the cache */
 	char			*bic_filename;	/* filename of cache */
 	blkid_probe		probe;		/* low-level probing stuff */
+	struct blkid_config	*conf;		/* config file or NULL if unnecessary */
 };
 
 #define BLKID_BIC_FL_PROBED	0x0002	/* We probed /proc/partition devices */
@@ -289,6 +292,9 @@ struct blkid_struct_cache
 
 /* old systems */
 #define BLKID_CACHE_FILE_OLD	"/etc/blkid.tab"
+
+extern const char *blkid_get_default_cache_filename(void);
+extern int blkid_get_cache_for_config(blkid_cache *ret_cache, struct blkid_config *config);
 
 #define BLKID_PROBE_OK	 0
 #define BLKID_PROBE_NONE 1
@@ -330,8 +336,6 @@ UL_DEBUG_DECLARE_MASK(libblkid);
 #define ON_DBG(m, x)    __UL_DBG_CALL(libblkid, BLKID_DEBUG_, m, x)
 
 extern void blkid_debug_dump_dev(blkid_dev dev);
-extern void blkid_debug_dump_tag(blkid_tag tag);
-
 
 /* devno.c */
 struct dir_list {
@@ -359,7 +363,7 @@ extern char *blkid_safe_getenv(const char *arg)
 			__attribute__((nonnull))
 			__attribute__((warn_unused_result));
 
-extern char *blkid_get_cache_filename(struct blkid_config *conf)
+extern char *blkid_get_cache_filename(blkid_cache cache)
 			__attribute__((warn_unused_result));
 /*
  * Functions to create and find a specific tag type: tag.c

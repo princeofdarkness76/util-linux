@@ -186,7 +186,8 @@ failed:
 }
 
 static char *evaluate_by_scan(const char *token, const char *value,
-		blkid_cache *cache, struct blkid_config *conf)
+			      blkid_cache *cache,
+			      struct blkid_config *conf)
 {
 	blkid_cache c = cache ? *cache : NULL;
 	char *res;
@@ -194,12 +195,10 @@ static char *evaluate_by_scan(const char *token, const char *value,
 	DBG(EVALUATE, ul_debug("evaluating by blkid scan %s=%s", token, value));
 
 	if (!c) {
-		char *cachefile = blkid_get_cache_filename(conf);
-		blkid_get_cache(&c, cachefile);
-		free(cachefile);
+		blkid_get_cache_for_config(&c, conf);
+		if (!c)
+			return NULL;
 	}
-	if (!c)
-		return NULL;
 
 	res = blkid_get_devname(c, token, value);
 
@@ -247,7 +246,7 @@ char *blkid_evaluate_tag(const char *token, const char *value, blkid_cache *cach
 		value = v;
 	}
 
-	conf = blkid_read_config(NULL);
+	conf = cache && *cache ? blkid_get_config(*cache) : blkid_read_config();
 	if (!conf)
 		goto out;
 

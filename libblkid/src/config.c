@@ -122,14 +122,14 @@ static int parse_next(FILE *fd, struct blkid_config *conf)
 	return 0;
 }
 
-/* return real config data or built-in default */
-struct blkid_config *blkid_read_config(const char *filename)
+/* return real config data or built-in default, use blkid_unref_config() for result */
+struct blkid_config *blkid_read_config(void)
 {
 	struct blkid_config *conf;
+	char *filename;
 	FILE *f;
 
-	if (!filename)
-		filename = safe_getenv("BLKID_CONF");
+	filename = safe_getenv("BLKID_CONF");
 	if (!filename)
 		filename = BLKID_CONFIG_FILE;
 
@@ -159,7 +159,7 @@ dflt:
 		conf->nevals = 2;
 	}
 	if (!conf->cachefile)
-		conf->cachefile = strdup(BLKID_CACHE_FILE);
+		conf->cachefile = strdup(blkid_get_default_cache_filename());
 	if (conf->uevent == -1)
 		conf->uevent = TRUE;
 	if (f)
@@ -170,6 +170,21 @@ err:
 	blkid_unref_config(conf);
 	return NULL;
 }
+
+/* Use this rather than blkid_read_config() if you already have cache. Caller
+ * has to call blkid_unref_config() for result!
+ */
+struct blkid_config *blkid_get_config(blkid_cache cache)
+{
+	if (!cache->conf) {
+		cache->conf = blkid_read_config();
+		if (!cache->conf)
+			return NULL;
+	}
+	blkid_ref_config(cache->conf);
+	return cache->conf;
+}
+
 
 void blkid_ref_config(struct blkid_config *conf)
 {
@@ -182,6 +197,7 @@ void blkid_unref_config(struct blkid_config *conf)
 	if (conf) {
 		conf->refcount--;
 		if (conf->refcount <= 0) {
+			DBG(CONFIG, ul_debug("freeing"));
 			free(conf->cachefile);
 			strv_free(conf->probeoff);
 			free(conf);
@@ -191,20 +207,16 @@ void blkid_unref_config(struct blkid_config *conf)
 
 #ifdef TEST_PROGRAM
 /*
- * usage: tst_config [<filename>]
+ * usage: tst_config
  */
 int main(int argc, char *argv[])
 {
 	int i;
 	struct blkid_config *conf;
-	char *filename = NULL;
 
 	blkid_init_debug(BLKID_DEBUG_ALL);
 
-	if (argc == 2)
-		filename = argv[1];
-
-	conf = blkid_read_config(filename);
+	conf = blkid_read_config();
 	if (!conf)
 		return EXIT_FAILURE;
 
