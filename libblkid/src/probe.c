@@ -175,10 +175,15 @@ void blkid_probe_set_config(blkid_probe pr, struct blkid_config *conf)
 {
 	assert(pr);
 
-	blkid_unref_config(pr->conf);
+	if (conf)
+		blkid_ref_config(conf);
 
+	blkid_unref_config(pr->conf);
 	pr->conf = conf;
-	blkid_ref_config(pr->conf);
+	if (!conf || !conf->probeoff)
+		return;
+
+	__blkid_probe_filter_types(pr, BLKID_CHAIN_SUBLKS, BLKID_FLTR_NOTIN, conf->probeoff);
 }
 
 struct blkid_config *blkid_probe_get_config(blkid_probe pr)

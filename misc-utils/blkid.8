@@ -304,6 +304,21 @@ a comma-separated list.  Default is "udev,scan".  The "udev" method uses udev
 symlinks and the "scan" method scans all block devices from the
 .I /proc/partitions
 file.
+.TP
+.I PROBE_OFF=<names>
+Defines filter to ignore specified filesystems and RAIDs when probe block devices. 
+The "names" is comma separated list of fileystems and RAIDs (see \fBblkid -k\fR for all supported names).
+
+.B It's strongly recommended to NOT use this setting for ordinary servers and workstations. 
+This option is designed for systems with huge number of block devices with precisely
+defined use-cases. The fileystems and RAIDs filtered out by PROBE_OFF= will be
+invisible for 
+.BR udev (7), 
+.BR blkid (8), 
+.BR mount (8)
+and many others utils. The setting does not affect 
+.BR wipefs (8).
+
 .SH AUTHOR
 .B blkid
 was written by Andreas Dilger for libblkid and improved by Theodore Ts'o
