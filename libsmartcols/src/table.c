@@ -572,13 +572,7 @@ err:
  * @tb: table
  * @n: column number (0..N)
  *
- * This is a shortcut for
- *
- *   ln = scols_new_line();
- *   scols_line_set_....(cl, ...);
- *   scols_table_add_line(tb, ln);
- *
- * Returns: a newly allocate line
+ * Returns: a line or NULL
  */
 struct libscols_line *scols_table_get_line(struct libscols_table *tb,
 					   size_t n)
@@ -710,6 +704,27 @@ int scols_table_set_symbols(struct libscols_table *tb,
 		scols_symbols_set_title_padding(tb->symbols, " ");
 	}
 
+	return 0;
+}
+
+/**
+ * scols_table_enable_nolinesep
+ * @tb: table
+ * @enable: 1 or 0
+ *
+ * Enable/disable line separator printing. This is usefull if you want to
+ * re-printing the same line more than once (e.g. progress bar). Don't use it
+ * if you're not sure.
+ *
+ * Returns: 0 on success, negative number in case of an error.
+ */
+int scols_table_enable_nolinesep(struct libscols_table *tb, int enable)
+{
+	if (!tb)
+		return -EINVAL;
+
+	DBG(TAB, ul_debugobj(tb, "nolinesep: %s", enable ? "ENABLE" : "DISABLE"));
+	tb->no_linesep = enable;
 	return 0;
 }
 

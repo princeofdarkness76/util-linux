@@ -103,6 +103,7 @@ scols_table_enable_export
 scols_table_enable_json
 scols_table_enable_maxout
 scols_table_enable_noheadings
+scols_table_enable_nolinesep
 scols_table_enable_nowrap
 scols_table_enable_raw
 scols_table_get_column
@@ -143,6 +144,8 @@ scols_unref_table
 <FILE>table_print</FILE>
 scols_print_table
 scols_print_table_to_string
+scols_table_print_range
+scols_table_print_range_to_string
 </SECTION>
 
 <SECTION>
