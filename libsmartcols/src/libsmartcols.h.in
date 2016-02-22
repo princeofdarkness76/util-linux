@@ -210,6 +210,7 @@ extern int scols_table_enable_noheadings(struct libscols_table *tb, int enable);
 extern int scols_table_enable_export(struct libscols_table *tb, int enable);
 extern int scols_table_enable_maxout(struct libscols_table *tb, int enable);
 extern int scols_table_enable_nowrap(struct libscols_table *tb, int enable);
+extern int scols_table_enable_nolinesep(struct libscols_table *tb, int enable);
 
 extern int scols_table_set_column_separator(struct libscols_table *tb, const char *sep);
 extern int scols_table_set_line_separator(struct libscols_table *tb, const char *sep);
@@ -245,6 +246,14 @@ extern int scols_sort_table(struct libscols_table *tb, struct libscols_column *c
 /* table_print.c */
 extern int scols_print_table(struct libscols_table *tb);
 extern int scols_print_table_to_string(struct libscols_table *tb, char **data);
+
+extern int scols_table_print_range(	struct libscols_table *tb,
+					struct libscols_line *start,
+					struct libscols_line *end);
+extern int scols_table_print_range_to_string(	struct libscols_table *tb,
+						struct libscols_line *start,
+						struct libscols_line *end,
+						char **data);
 
 #ifdef __cplusplus
 }
