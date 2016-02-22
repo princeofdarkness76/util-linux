@@ -1,0 +1,10 @@
+3/usr/local/bin/makepp
+VERSION2.05.18.2darwin-thread-multi-2level
+LOAD140448042678416makefile140448032172328/users/pod/util-linux140448032172328
+TRY140448042678416
+USEdefault rule
+DEPEND140448042678416
+UP_TO_DATE140448042678416
+LOAD_AUTOMAKE140448042678416
+*** /users/pod/util-linux/makefile:6924: syntax error in line '@AMDEP_TRUE@@am__include@ @am__quote@disk-utils/@DEPDIR@/addpart.Po@am__quote@'
+N_FILES000
