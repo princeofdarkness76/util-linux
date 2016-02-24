@@ -380,6 +380,7 @@ static void server_loop(const char *socket_path, const char *pidfile_path,
 
 #ifdef HAVE_LIBSYSTEMD
 	if (uuidd_cxt->no_sock) {
+<<<<<<< HEAD
 		const int r = sd_listen_fds(0);
 
 		if (r < 0) {
@@ -389,6 +390,17 @@ static void server_loop(const char *socket_path, const char *pidfile_path,
 			errx(EXIT_FAILURE,
 			     _("no file descriptors received, check systemctl status uuidd.socket"));
 		else if (1 < r)
+=======
+		const int ret = sd_listen_fds(0);
+
+		if (ret < 0) {
+			errno = ret * -1;
+			err(EXIT_FAILURE, _("sd_listen_fds() failed"));
+		} else if (ret == 0)
+			errx(EXIT_FAILURE,
+			     _("no file descriptors received, check systemctl status uuidd.socket"));
+		else if (1 < ret)
+>>>>>>> origin/stable/v2.27
 			errx(EXIT_FAILURE,
 			     _("too many file descriptors received, check uuidd.socket"));
 		s = SD_LISTEN_FDS_START + 0;

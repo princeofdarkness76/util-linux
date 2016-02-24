@@ -14,7 +14,7 @@ libblkid \- block device identification library
 .sp
 .B cc
 .I file.c
-.B \-lblkid
+.B $(pkg-config --cflags --libs blkid)
 .SH DESCRIPTION
 The
 .B libblkid

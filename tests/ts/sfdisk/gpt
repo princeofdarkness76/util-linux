@@ -157,5 +157,26 @@ udevadm settle
 ts_finalize_subtest
 
 
+ts_init_subtest "reorder"
+$TS_CMD_WIPEFS -a ${TS_DEVICE} &> /dev/null
+udevadm settle
+$TS_CMD_SFDISK ${TS_DEVICE} >> $TS_OUTPUT 2>&1 <<EOF
+unit: sectors
+label: gpt
+label-id: 3b8559db-33af-43e9-befc-c331d829b539
+
+${TS_DEVICE}1 : start=8192,  size=6144
+${TS_DEVICE}2 : start=2048,  size=6144
+${TS_DEVICE}3 : start=20480, size=81887
+${TS_DEVICE}4 : start=14336, size=6144
+EOF
+udevadm settle
+$TS_CMD_SFDISK --reorder ${TS_DEVICE} >> $TS_OUTPUT 2>&1
+$TS_CMD_SFDISK --list ${TS_DEVICE} >> $TS_OUTPUT 2>&1
+ts_fdisk_clean $TS_DEVICE
+udevadm settle
+ts_finalize_subtest
+
+
 rmmod scsi_debug
 ts_finalize

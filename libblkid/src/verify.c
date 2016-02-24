@@ -119,7 +119,7 @@ blkid_dev blkid_verify(blkid_cache cache, blkid_dev dev)
 		return NULL;
 	}
 	if (!cache->probe) {
-		cache->probe = blkid_new_probe();
+		cache->probe = __blkid_new_probe(cache->conf);
 		if (!cache->probe) {
 			blkid_free_dev(dev);
 			return NULL;
