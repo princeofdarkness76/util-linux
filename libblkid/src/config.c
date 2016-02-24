@@ -25,9 +25,11 @@
 
 #include "blkidP.h"
 #include "env.h"
+#include "strv.h"
 
 static int parse_evaluate(struct blkid_config *conf, char *s)
 {
+	DBG(CONFIG, ul_debug("parse EVALUATE='%s'", s));
 	while(s && *s) {
 		char *sep;
 
@@ -53,6 +55,13 @@ err:
 	DBG(CONFIG, ul_debug(
 		"config file: unknown evaluation method '%s'.", s));
 	return -1;
+}
+
+static int parse_probeoff(struct blkid_config *conf, char *s)
+{
+	DBG(CONFIG, ul_debug("parse PROBE_OFF='%s'", s));
+	conf->probeoff = strv_split(s, ",");
+	return 0;
 }
 
 static int parse_next(FILE *fd, struct blkid_config *conf)
@@ -101,6 +110,10 @@ static int parse_next(FILE *fd, struct blkid_config *conf)
 		s += 9;
 		if (*s && parse_evaluate(conf, s) == -1)
 			return -1;
+	} else if (!strncmp(s, "PROBE_OFF=", 10)) {
+		s += 10;
+		if (*s && parse_probeoff(conf, s) == -1)
+			return -1;
 	} else {
 		DBG(CONFIG, ul_debug(
 			"config file: unknown option '%s'.", s));
@@ -109,14 +122,14 @@ static int parse_next(FILE *fd, struct blkid_config *conf)
 	return 0;
 }
 
-/* return real config data or built-in default */
-struct blkid_config *blkid_read_config(const char *filename)
+/* return real config data or built-in default, use blkid_unref_config() for result */
+struct blkid_config *blkid_read_config(void)
 {
 	struct blkid_config *conf;
+	char *filename;
 	FILE *f;
 
-	if (!filename)
-		filename = safe_getenv("BLKID_CONF");
+	filename = safe_getenv("BLKID_CONF");
 	if (!filename)
 		filename = BLKID_CONFIG_FILE;
 
@@ -124,6 +137,7 @@ struct blkid_config *blkid_read_config(const char *filename)
 	if (!conf)
 		return NULL;
 	conf->uevent = -1;
+	conf->refcount = 1;
 
 	DBG(CONFIG, ul_debug("reading config file: %s.", filename));
 
@@ -145,42 +159,64 @@ dflt:
 		conf->nevals = 2;
 	}
 	if (!conf->cachefile)
-		conf->cachefile = strdup(BLKID_CACHE_FILE);
+		conf->cachefile = strdup(blkid_get_default_cache_filename());
 	if (conf->uevent == -1)
 		conf->uevent = TRUE;
 	if (f)
 		fclose(f);
 	return conf;
 err:
-	free(conf);
 	fclose(f);
+	blkid_unref_config(conf);
 	return NULL;
 }
 
-void blkid_free_config(struct blkid_config *conf)
+/* Use this rather than blkid_read_config() if you already have cache. Caller
+ * has to call blkid_unref_config() for result!
+ */
+struct blkid_config *blkid_get_config(blkid_cache cache)
 {
-	if (!conf)
-		return;
-	free(conf->cachefile);
-	free(conf);
+	if (!cache->conf) {
+		cache->conf = blkid_read_config();
+		if (!cache->conf)
+			return NULL;
+	}
+	blkid_ref_config(cache->conf);
+	return cache->conf;
+}
+
+
+void blkid_ref_config(struct blkid_config *conf)
+{
+	if (conf)
+		conf->refcount++;
+}
+
+void blkid_unref_config(struct blkid_config *conf)
+{
+	if (conf) {
+		conf->refcount--;
+		if (conf->refcount <= 0) {
+			DBG(CONFIG, ul_debug("freeing"));
+			free(conf->cachefile);
+			strv_free(conf->probeoff);
+			free(conf);
+		}
+	}
 }
 
 #ifdef TEST_PROGRAM
 /*
- * usage: tst_config [<filename>]
+ * usage: tst_config
  */
 int main(int argc, char *argv[])
 {
 	int i;
 	struct blkid_config *conf;
-	char *filename = NULL;
 
 	blkid_init_debug(BLKID_DEBUG_ALL);
 
-	if (argc == 2)
-		filename = argv[1];
-
-	conf = blkid_read_config(filename);
+	conf = blkid_read_config();
 	if (!conf)
 		return EXIT_FAILURE;
 
@@ -192,7 +228,7 @@ int main(int argc, char *argv[])
 	printf("SEND UEVENT: %s\n", conf->uevent ? "TRUE" : "FALSE");
 	printf("CACHE_FILE:  %s\n", conf->cachefile);
 
-	blkid_free_config(conf);
+	blkid_unref_config(conf);
 	return EXIT_SUCCESS;
 }
 #endif

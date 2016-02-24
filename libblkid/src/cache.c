@@ -48,7 +48,7 @@
  * locate these devices without enumerating only visible devices, so the use of
  * the cache file is required in this situation.
  */
-static const char *get_default_cache_filename(void)
+const char *blkid_get_default_cache_filename(void)
 {
 	struct stat st;
 
@@ -58,28 +58,93 @@ static const char *get_default_cache_filename(void)
 	return BLKID_CACHE_FILE_OLD;	/* cache in /etc */
 }
 
-/* returns allocated path to cache */
-char *blkid_get_cache_filename(struct blkid_config *conf)
+char *blkid_get_cache_filename(blkid_cache cache)
 {
-	char *filename;
+	char *filename = NULL;
 
+	/* already known */
+	if (cache && cache->bic_filename)
+		return cache->bic_filename;
+
+	/* try environ[] */
 	filename = safe_getenv("BLKID_FILE");
 	if (filename)
 		filename = strdup(filename);
-	else if (conf)
-		filename = conf->cachefile ? strdup(conf->cachefile) : NULL;
+
+	/* try config file */
 	else {
-		struct blkid_config *c = blkid_read_config(NULL);
-		if (!c)
-			filename = strdup(get_default_cache_filename());
-		else {
-			filename = c->cachefile;  /* already allocated */
-			c->cachefile = NULL;
-			blkid_free_config(c);
+		struct blkid_config *conf;
+
+		conf = cache ? blkid_get_config(cache) : blkid_read_config();
+		if (conf) {
+			filename = conf->cachefile ? strdup(conf->cachefile) : NULL;
+			blkid_unref_config(conf);
 		}
 	}
+
+	/* use default */
+	if (!filename)
+		filename = strdup(blkid_get_default_cache_filename());
+	if (cache)
+		cache->bic_filename = filename;
 	return filename;
 }
+
+static blkid_cache new_cache(void)
+{
+	blkid_cache cache;
+
+	blkid_init_debug(0);
+
+	DBG(CACHE, ul_debug("new cache"));
+	if (!(cache = (blkid_cache) calloc(1, sizeof(struct blkid_struct_cache))))
+		return NULL;
+
+	INIT_LIST_HEAD(&cache->bic_devs);
+	INIT_LIST_HEAD(&cache->bic_tags);
+
+	return cache;
+}
+
+static void free_cache(blkid_cache cache)
+{
+	if (!cache)
+		return;
+
+	blkid_free_probe(cache->probe);
+	blkid_unref_config(cache->conf);
+
+	free(cache->bic_filename);
+	free(cache);
+}
+
+/* if the file is NULL then it reads blkid.conf to get cache path */
+static blkid_cache new_cache_for_file(const char *filename)
+{
+	blkid_cache cache = NULL;
+
+	cache = new_cache();
+	if (!cache)
+		goto fail;
+
+	if (filename && !*filename)
+		filename = NULL;
+	if (filename)
+		cache->bic_filename = strdup(filename);
+	else
+		cache->bic_filename = blkid_get_cache_filename(cache);
+
+	DBG(CACHE, ul_debug("creating blkid cache (using %s)", cache->bic_filename));
+
+	if (!cache->bic_filename)
+		goto fail;
+
+	return cache;
+fail:
+	free_cache(cache);
+	return NULL;
+}
+
 
 /**
  * blkid_get_cache:
@@ -97,27 +162,43 @@ int blkid_get_cache(blkid_cache *ret_cache, const char *filename)
 	if (!ret_cache)
 		return -BLKID_ERR_PARAM;
 
-	blkid_init_debug(0);
-
-	DBG(CACHE, ul_debug("creating blkid cache (using %s)",
-				filename ? filename : "default cache"));
-
-	if (!(cache = (blkid_cache) calloc(1, sizeof(struct blkid_struct_cache))))
+	cache = new_cache_for_file(filename);
+	if (!cache)
 		return -BLKID_ERR_MEM;
-
-	INIT_LIST_HEAD(&cache->bic_devs);
-	INIT_LIST_HEAD(&cache->bic_tags);
-
-	if (filename && !*filename)
-		filename = NULL;
-	if (filename)
-		cache->bic_filename = strdup(filename);
-	else
-		cache->bic_filename = blkid_get_cache_filename(NULL);
 
 	blkid_read_cache(cache);
 	*ret_cache = cache;
 	return 0;
+}
+
+/* This is like blkid_get_cache(), but reuses already read @config (and add
+ * reference from the cache to the config)
+ */
+int blkid_get_cache_for_config(blkid_cache *ret_cache, struct blkid_config *config)
+{
+	blkid_cache cache;
+
+	assert(ret_cache);
+	assert(config);
+	assert(config->cachefile);
+
+	cache = new_cache();
+	if (!cache)
+		goto fail;
+
+	cache->conf = config;
+	blkid_ref_config(config);
+
+	/* default or from @config */
+	cache->bic_filename = blkid_get_cache_filename(cache);
+
+	blkid_read_cache(cache);
+	*ret_cache = cache;
+	return 0;
+fail:
+	free_cache(cache);
+	return NULL;
+
 }
 
 /**
@@ -161,10 +242,8 @@ void blkid_put_cache(blkid_cache cache)
 		blkid_free_tag(tag);
 	}
 
-	blkid_free_probe(cache->probe);
+	free_cache(cache);
 
-	free(cache->bic_filename);
-	free(cache);
 }
 
 /**

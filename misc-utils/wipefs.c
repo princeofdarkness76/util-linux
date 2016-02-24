@@ -250,6 +250,10 @@ new_probe(const char *devname, int mode)
 	if (!pr)
 		goto error;
 
+	/* Ignore build-in filters (e.g. /etc/blkid.conf: PROBE_OFF=) */
+	blkid_probe_reset_superblocks_filter(pr);
+	blkid_probe_reset_partitions_filter(pr);
+
 	blkid_probe_enable_superblocks(pr, 1);
 	blkid_probe_set_superblocks_flags(pr,
 			BLKID_SUBLKS_MAGIC |	/* return magic string and offset */
