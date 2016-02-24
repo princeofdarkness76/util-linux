@@ -11,10 +11,13 @@ socket data, rfc5424_exceed_size:
 <13>1 2009-02-13T23:31:30.123456+00:00 test-hostname rfc5424_exceed_size - - [timeQuality tzKnown="1" isSynced="0"] abc
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 socket data, id_with_space:
 
 socket data, id_with_space:
 
+=======
+>>>>>>> origin/stable/v2.27
 =======
 >>>>>>> origin/stable/v2.27
 socket data, id_with_space:
