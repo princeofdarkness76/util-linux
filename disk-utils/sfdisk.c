@@ -844,6 +844,7 @@ static int command_activate(struct sfdisk *sf, int argc, char **argv)
 
 /*
 <<<<<<< HEAD
+<<<<<<< HEAD
  * sfdisk --delete <device> [<partno> ...]
  */
 static int command_delete(struct sfdisk *sf, int argc, char **argv)
@@ -883,6 +884,8 @@ static int command_delete(struct sfdisk *sf, int argc, char **argv)
 }
 
 /*
+=======
+>>>>>>> origin/sfdisk
 =======
 >>>>>>> origin/sfdisk
  * sfdisk --reorder <device>
@@ -1860,7 +1863,11 @@ int main(int argc, char *argv[])
 	atexit(close_stdout);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	while ((c = getopt_long(argc, argv, "aAbcdfFghJlLo:O:nN:qrsTu:vVX:Y:w:",
+=======
+	while ((c = getopt_long(argc, argv, "aAbcdfFghJlLo:O:nN:qrsTu:vVX:Y:",
+>>>>>>> origin/sfdisk
 =======
 	while ((c = getopt_long(argc, argv, "aAbcdfFghJlLo:O:nN:qrsTu:vVX:Y:",
 >>>>>>> origin/sfdisk
